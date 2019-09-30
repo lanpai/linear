@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct Mats {
+typedef struct {
     int m, n;
     double *matrix;
 } Mat;
