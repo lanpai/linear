@@ -1,8 +1,7 @@
 #ifndef __MAT_H
 #define __MAT_H
 
-#define DISABLE_ERROR_HANDLE
-#undef DISABLE_ERROR_HANDLE
+// Defining the macro DISABLE_ERROR_HANDLE will disable all error checks to increase performance
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,6 +48,22 @@ void setElem(Mat *mat, int i, int j, double val) {
     mat->matrix[i * mat->n + j] = val;
 }
 
+void copyMat(const Mat *mat, Mat *output) {
+#ifndef DISABLE_ERROR_HANDLE
+    if (mat->m != output->m) {
+        printf("copyMat(const Mat *mat, Mat *output): row number does not match.\n");
+        return;
+    }
+    if (mat->n != output->n) {
+        printf("copyMat(const Mat*mat, Mat *output): column number does not match.\n");
+        return;
+    }
+#endif
+
+    for (int i = 0; i < mat->m * mat->n; i++)
+        output->matrix[i] = mat->matrix[i];
+}
+
 void rref(const Mat *mat, Mat *output) {
 #ifndef DISABLE_ERROR_HANDLE
     if (mat->m != output->m) {
@@ -60,6 +75,31 @@ void rref(const Mat *mat, Mat *output) {
         return;
     }
 #endif
+
+    copyMat(mat, output);
+
+    for (int i = 0; i < output->m; i++) {
+        // Divides each element by the diagonal
+        double diagonal = getElem(output, i, i);
+        for (int j = 0; j < output->n; j++)
+            setElem(output, i, j, getElem(output, i, j) / diagonal);
+
+        // Row operations on lower rows to make the lower rows 0 under the leading 1
+        for (int j = i + 1; j < output->m; j++) {
+            double ratio = getElem(output, j, i);
+            for (int k = 0; k < output->n; k++)
+                setElem(output, j, k, getElem(output, j, k) - ratio * getElem(output, i, k));
+        }
+    }
+
+    for (int i = output->m - 1; i > 0; i--) {
+        // Row operations on upper rows to make the upper rows 0 above the leading 1
+        for (int j = 0; j < i; j++) {
+            double ratio = getElem(output, j, i);
+            for (int k = 0; k < output->n; k++)
+                setElem(output, j, k, getElem(output, j, k) - ratio * getElem(output, i, k));
+        }
+    }
 }
 
 void printMat(const Mat *mat) {
@@ -70,6 +110,7 @@ void printMat(const Mat *mat) {
     }
 #endif
 
+    printf("printing mat (%dx%d):\n", mat->m, mat->n);
     for (int i = 0; i < mat->m; i++)
         for (int j = 0; j < mat->n; j++)
             printf("% 5.5f%s", getElem(mat, i, j), (j < mat->n - 1) ? ", " : "\n");
